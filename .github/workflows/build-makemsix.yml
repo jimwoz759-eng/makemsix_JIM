@@ -37,7 +37,7 @@ jobs:
           New-Item -ItemType Directory -Force out | Out-Null
           Get-ChildItem -Recurse .vs -Include makemsix.exe,msix.dll -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName out\ }
           Get-ChildItem out
-      - name: Publish to GitHub Release (tag: latest)
+      - name: "Publish to GitHub Release (latest)"
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
