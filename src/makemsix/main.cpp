@@ -14,6 +14,12 @@
 #include <functional>
 #include <sstream>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+#pragma comment(lib, "shell32.lib")
+#endif
+
 #define TOOL_HELP_COMMAND_STRING "-?"
 
 struct Invocation;
@@ -656,7 +662,7 @@ Command CreateBundleCommand()
 #pragma endregion
 
 // Defines the grammar of commands and each command's associated options,
-int main(int argc, char* argv[])
+static int RunMain(int argc, char* argv[])
 {
     std::cout << "Microsoft (R) makemsix version " << SDK_VERSION << std::endl;
     std::cout << "Copyright (C) 2017 Microsoft.  All rights reserved." << std::endl;
@@ -716,3 +722,49 @@ int main(int argc, char* argv[])
     }
     return result;
 }
+
+#ifdef _WIN32
+// The msix library takes UTF-8 paths, but on Windows main()'s argv uses the
+// system ANSI code page (e.g. GBK on Chinese systems). Passing those bytes on
+// makes the strict UTF-8 -> UTF-16 conversion fail ("Error converting to wstring")
+// for any non-ASCII path. Re-read the command line as UTF-16 and hand UTF-8 down.
+int main(int argc, char* argv[])
+{
+    SetConsoleOutputCP(CP_UTF8);
+
+    int wargc = 0;
+    LPWSTR* wargv = CommandLineToArgvW(GetCommandLineW(), &wargc);
+    if (wargv == nullptr)
+    {
+        return RunMain(argc, argv);
+    }
+
+    std::vector<std::string> utf8Args;
+    utf8Args.reserve(static_cast<size_t>(wargc));
+    for (int i = 0; i < wargc; ++i)
+    {
+        int len = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, nullptr, 0, nullptr, nullptr);
+        std::string arg;
+        if (len > 1)
+        {
+            arg.resize(static_cast<size_t>(len));
+            WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, &arg[0], len, nullptr, nullptr);
+            arg.resize(static_cast<size_t>(len) - 1); // drop terminating NUL
+        }
+        utf8Args.push_back(std::move(arg));
+    }
+    LocalFree(wargv);
+
+    std::vector<char*> utf8Argv;
+    utf8Argv.reserve(utf8Args.size() + 1);
+    for (auto& a : utf8Args) { utf8Argv.push_back(&a[0]); }
+    utf8Argv.push_back(nullptr);
+
+    return RunMain(static_cast<int>(utf8Args.size()), utf8Argv.data());
+}
+#else
+int main(int argc, char* argv[])
+{
+    return RunMain(argc, argv);
+}
+#endif
