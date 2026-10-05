@@ -15,10 +15,10 @@ jobs:
         arch: [x64, x86]
     steps:
       - uses: actions/checkout@v4
-      - name: Build makemsix (static CRT, no tests/samples)
+      - name: Build makemsix (no tests/samples)
         shell: cmd
         run: |
-          call makewin.cmd ${{ matrix.arch }} --skip-tests --skip-samples -mt > build.log 2>&1
+          call makewin.cmd ${{ matrix.arch }} --skip-tests --skip-samples > build.log 2>&1
           exit /b 0
       - name: Report build log tail
         if: always()
@@ -27,13 +27,13 @@ jobs:
           $tail = (Get-Content build.log -Tail 70 -ErrorAction SilentlyContinue | Out-String)
           $esc = $tail.Replace('%','%25').Replace("`r",'').Replace("`n",'%0A')
           Write-Host "::error title=build-tail-${{ matrix.arch }}::$esc"
-          $bins = (Get-ChildItem -Recurse . -Include makemsix.exe,msix.dll -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName + ' ' + $_.Length } | Out-String)
+          $bins = (Get-ChildItem -Recurse .vs -Include makemsix.exe,msix.dll -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName + ' ' + $_.Length } | Out-String)
           Write-Host "::warning title=found-bins-${{ matrix.arch }}::$($bins.Replace("`r",'').Replace("`n",'%0A'))"
       - name: Collect binaries
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force out | Out-Null
-          Get-ChildItem -Recurse . -Include makemsix.exe,msix.dll -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName out\ }
+          Get-ChildItem -Recurse .vs -Include makemsix.exe,msix.dll -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName out\ }
           Get-ChildItem out
       - uses: actions/upload-artifact@v4
         with:
