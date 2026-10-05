@@ -1,0 +1,41 @@
+# Branches that trigger a build on commit
+trigger:
+- master
+- release_v*
+
+# Branches that trigger builds on PR
+pr:
+  branches:
+    include:
+    - master
+    - release_v*
+  paths:
+    include:
+    - cmake/*
+    - lib/*
+    - pipelines/*
+    - resources/*
+    - samples/*
+    - src/*
+    - test/*
+    - CMakeLists.txt
+    - makeaosp.sh
+    - makeios.sh
+    - makelinux.sh
+    - makemac.sh
+    - makewin.cmd
+    - manifest.cmakein
+
+# Schedule weekly build
+# Cron syntax: "mm HH DD MM DW" = minutes, hours, days, months, day of week (UTC time)
+schedules:
+# "0 8" = 8AM UTC = 12AM PST
+- cron: "0 8 * * Sun"
+  displayName: Weekly build
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+- template: templates/build-aosp.yml

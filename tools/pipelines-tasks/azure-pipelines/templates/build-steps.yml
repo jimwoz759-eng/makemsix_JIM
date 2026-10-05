@@ -1,0 +1,68 @@
+# Steps for building the project.
+# These are common in PR builds and release builds
+
+steps:
+- task: NodeTool@0
+  displayName: 'Use Node 16.x'
+  inputs:
+    versionSpec: 16.x
+
+# Build the project
+- task: PowerShell@2
+  displayName: 'Build the project'
+  inputs:
+    filePath: '$(tasksRoot)/build.ps1'
+    arguments: 'BuildForProduction'
+
+# Run the tests
+- task: NuGetCommand@2
+  displayName: 'Restore NuGet packages for test project'
+  inputs:
+    restoreSolution: '$(tasksRoot)/test/assets/HelloWorldUWPApp/HelloWorldApp.sln'
+
+- task: PowerShell@2
+  displayName: "Set AVD Config input data for avd publish tests" 
+  inputs:
+    targetType: 'inline'
+    script: |
+      $avdInputsConfigData = (Get-Content -Path '$(tasksRoot)/test/assets/avdinputs.json') | ConvertFrom-Json
+      $avdInputsConfigData.connectedServiceNameARM = If ($subscriptionId) {$subscriptionId} Else {''}
+      $avdInputsConfigData.clientId = If ($clientId) {$clientId} Else {''}
+      $avdInputsConfigData.clientSecret = If ($clientSecret) {$clientSecret} Else {''}
+      $avdInputsConfigData.tenantId = If ($tenantId) {$tenantId} Else {''}
+      $avdInputsConfigData.email = If ($emailId) {$emailId} Else {''}
+      $avdInputsConfigData.resourceGroupName = If ($resourceGroupName) {$resourceGroupName} Else {''}
+      $avdInputsConfigData.storageAccount = If ($storageAccountName) {$storageAccountName} Else {''}
+      $avdInputsConfigData.fileShare = If ($fileShareName) {$fileShareName} Else {''}
+      $avdInputsConfigData.hostPool = If ($hostPoolName) {$hostPoolName} Else {''}
+      $avdInputsConfigData.workSpace = If ($workSpaceName) {$workSpaceName} Else {''}
+      $avdInputsConfigData.applicationGroup = If ($applicationGroupName) {$applicationGroupName} Else {''}
+      $avdInputsConfigData | ConvertTo-Json | Set-Content -Path '$(tasksRoot)/test/assets/avdinputs.json'
+
+- powershell: |
+    npx mocha
+  displayName: 'Run the tests'
+  workingDirectory: '$(tasksRoot)'
+  env:
+    SYSTEM_CULTURE: 'en-US'
+
+- task: PublishSecurityAnalysisLogs@3
+  inputs:
+    ArtifactName: 'CodeAnalysisLogs'
+    ArtifactType: 'Container'
+    AllTools: true
+    ToolLogsNotFoundAction: 'Standard'
+
+- task: CredScan@3
+  displayName: 'Run CredScan'
+
+- task: ComponentGovernanceComponentDetection@0
+  displayName: 'Component Detection'
+
+- task: PublishSecurityAnalysisLogs@3
+  displayName: 'Publish Security Analysis Logs'
+  inputs:
+    ArtifactName: 'CodeAnalysisLogs'
+    ArtifactType: 'Container'
+    AllTools: true
+    ToolLogsNotFoundAction: 'Standard'

@@ -1,0 +1,20 @@
+{
+    global:
+        CoCreateAppxFactory;
+	CoCreateAppxFactoryWithHeap;
+	CoCreateAppxFactoryWithOptions;
+	CoCreateAppxFactoryWithHeapAndOptions;
+	CreateStreamOnFile;
+	CreateStreamOnFileUTF16;
+	MsixGetLogTextUTF8;
+	CoCreateAppxBundleFactory;
+	CoCreateAppxBundleFactoryWithHeap;
+	UnpackPackage;
+	UnpackPackageFromStream;
+	UnpackPackageFromPackageReader;
+	UnpackBundle;
+	UnpackBundleFromStream;
+	UnpackBundleFromBundleReader;
+    local:
+        *;
+};

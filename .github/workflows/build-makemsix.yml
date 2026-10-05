@@ -1,0 +1,31 @@
+name: build-makemsix
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+env:
+  # Upstream CMakeLists use an old cmake_minimum_required; newer CMake needs this.
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+jobs:
+  windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build makemsix (static CRT, no tests/samples)
+        shell: cmd
+        run: makewin.cmd ${{ matrix.arch }} --skip-tests --skip-samples -mt
+      - name: Collect binaries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Get-ChildItem -Recurse .vs -Include makemsix.exe,msix.dll | ForEach-Object { Copy-Item $_.FullName out\ }
+          Get-ChildItem out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: makemsix-win-${{ matrix.arch }}
+          path: out/*
+          if-no-files-found: error

@@ -1,0 +1,20 @@
+{
+  "name": "msix-tasks-app-attach",
+  "version": "1.0.0",
+  "description": "Task to create VHDX files for MSIX app attach",
+  "repository": {
+    "type": "git",
+    "url": "git+github.com/microsoft/msix-packaging.git"
+  },
+  "scripts": {},
+  "author": "Microsoft Corporation",
+  "license": "MIT",
+  "dependencies": {
+    "azure-devops-node-api": "^12.0.0",
+    "azure-pipelines-task-lib": "^4.3.1",
+    "common": "file:../common/msix-tasks-helpers-1.0.0.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.5"
+  }
+}
