@@ -6,6 +6,8 @@ on:
 env:
   # Upstream CMakeLists use an old cmake_minimum_required; newer CMake needs this.
   CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+permissions:
+  contents: write
 jobs:
   windows:
     runs-on: windows-latest
@@ -35,6 +37,15 @@ jobs:
           New-Item -ItemType Directory -Force out | Out-Null
           Get-ChildItem -Recurse .vs -Include makemsix.exe,msix.dll -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName out\ }
           Get-ChildItem out
+      - name: Publish to GitHub Release (tag: latest)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Compress-Archive -Path out\* -DestinationPath makemsix-win-${{ matrix.arch }}.zip -Force
+          $notes = "makemsix.exe + msix.dll built from microsoft/msix-packaging (MIT). Keep both files in the same folder. Needs the VC++ 2015-2022 Redistributable."
+          gh release create latest --title "makemsix latest" --notes $notes 2>$null
+          gh release upload latest makemsix-win-${{ matrix.arch }}.zip --clobber
       - uses: actions/upload-artifact@v4
         with:
           name: makemsix-win-${{ matrix.arch }}
